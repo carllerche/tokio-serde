@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate futures;
-extern crate tokio_io;
 extern crate bytes;
 
 mod buffer_one;

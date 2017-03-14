@@ -5,5 +5,4 @@ authors = ["Carl Lerche <me@carllerche.com>"]
 
 [dependencies]
 futures = "0.1"
-tokio-io = { git = "https://github.com/alexcrichton/tokio-io" }
 bytes = { git = "https://github.com/carllerche/bytes" }
