@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 pub trait Serializer<T> {
     type Error;
 
-    fn serialize(&mut self, item: &T, dst: &mut BytesMut) -> Result<(), Self::Error>;
+    fn serialize(&mut self, item: &T) -> Result<BytesMut, Self::Error>;
 }
 
 /// Deserializes a value from a source buffer
@@ -89,6 +89,20 @@ impl<T, U, S> Stream for FramedRead<T, U, S>
     }
 }
 
+impl<T, U, S> FramedWrite<T, U, S>
+    where T: Sink<SinkItem = BytesMut, SinkError = io::Error>,
+          S: Serializer<U>,
+          S::Error: Into<io::Error>,
+{
+    pub fn new(inner: T, serializer: S) -> Self {
+        FramedWrite {
+            inner: BufferOne::new(inner),
+            serializer: serializer,
+            item: PhantomData,
+        }
+    }
+}
+
 impl<T, U, S> Sink for FramedWrite<T, U, S>
     where T: Sink<SinkItem = BytesMut, SinkError = io::Error>,
           S: Serializer<U>,
@@ -102,11 +116,8 @@ impl<T, U, S> Sink for FramedWrite<T, U, S>
             return Ok(AsyncSink::NotReady(item));
         }
 
-        // Let the `Serializer` impl reserve the necessary capacity
-        let mut bytes = BytesMut::with_capacity(0);
-
-        let res = self.serializer.serialize(&item, &mut bytes);
-        try!(res.map_err(Into::into));
+        let res = self.serializer.serialize(&item);
+        let bytes = try!(res.map_err(Into::into));
 
         assert!(try!(self.inner.start_send(bytes)).is_ready());
 
