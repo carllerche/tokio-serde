@@ -16,7 +16,7 @@ use std::marker::PhantomData;
 pub trait Serializer<T> {
     type Error;
 
-    fn serialize(&mut self, item: &T, dst: &BytesMut) -> Result<(), Self::Error>;
+    fn serialize(&mut self, item: &T, dst: &mut BytesMut) -> Result<(), Self::Error>;
 }
 
 /// Deserializes a value from a source buffer
