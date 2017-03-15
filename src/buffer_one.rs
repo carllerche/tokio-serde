@@ -42,6 +42,13 @@ impl<S: Sink> BufferOne<S> {
         &mut self.sink
     }
 
+    /// Consumes the `BufferOne`, returning its underlying sink.
+    ///
+    /// If a value is currently buffered, it will be lost.
+    pub fn into_inner(self) -> S {
+        self.sink
+    }
+
     /// Polls the sink to detect whether a call to `start_send` will be accepted
     /// or not.
     ///
