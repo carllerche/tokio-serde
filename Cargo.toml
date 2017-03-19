@@ -5,4 +5,4 @@ authors = ["Carl Lerche <me@carllerche.com>"]
 
 [dependencies]
 futures = "0.1"
-bytes = { git = "https://github.com/carllerche/bytes" }
+bytes = "0.4"
