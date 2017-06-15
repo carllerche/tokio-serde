@@ -2,6 +2,13 @@
 name = "tokio-serde"
 version = "0.1.0"
 authors = ["Carl Lerche <me@carllerche.com>"]
+license = "MIT/Apache-2.0"
+repository = "https://github.com/carllerche/tokio-serde"
+documentation = "https://docs.rs/tokio-serde/0.1"
+description = """
+Utilities needed to easily implement a Tokio transport using serde for
+serialization and deserialization of frame values.
+"""
 
 [dependencies]
 futures = "0.1"
