@@ -63,7 +63,6 @@ use buffer_one::BufferOne;
 use futures::{Async, AsyncSink, StartSend, Sink, Stream, Poll};
 use bytes::{Bytes, BytesMut};
 
-use std::io;
 use std::marker::PhantomData;
 
 /// Serializes a value into a destination buffer
@@ -246,10 +245,10 @@ pub struct FramedWrite<T, U, S> where T: Sink {
 // ===== impl FramedRead =====
 
 impl<T, U, S> FramedRead<T, U, S>
-    where T: Stream<Error = io::Error>,
+    where T: Stream,
           Bytes: From<T::Item>,
           S: Deserializer<U>,
-          S::Error: From<io::Error>,
+          S::Error: Into<T::Error>,
 {
     /// Creates a new `FramedRead` with the given buffer stream and deserializer.
     pub fn new(inner: T, deserializer: S) -> FramedRead<T, U, S> {
@@ -292,15 +291,15 @@ impl<T, U, S> FramedRead<T, U, S> {
 }
 
 impl<T, U, S> Stream for FramedRead<T, U, S>
-    where T: Stream<Error = io::Error>,
+    where T: Stream,
+          T::Error: From<S::Error>,
           Bytes: From<T::Item>,
           S: Deserializer<U>,
-          S::Error: From<io::Error>,
 {
     type Item = U;
-    type Error = S::Error;
+    type Error = T::Error;
 
-    fn poll(&mut self) -> Poll<Option<U>, S::Error> {
+    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
         match try_ready!(self.inner.poll()) {
             Some(bytes) => {
                 let val = try!(self.deserializer.deserialize(&bytes.into()));
@@ -312,9 +311,9 @@ impl<T, U, S> Stream for FramedRead<T, U, S>
 }
 
 impl<T, U, S> FramedWrite<T, U, S>
-    where T: Sink<SinkItem = BytesMut, SinkError = io::Error>,
+    where T: Sink<SinkItem = BytesMut>,
           S: Serializer<U>,
-          S::Error: Into<io::Error>,
+          S::Error: Into<T::SinkError>,
 {
     /// Creates a new `FramedWrite` with the given buffer sink and serializer.
     pub fn new(inner: T, serializer: S) -> Self {
@@ -354,14 +353,14 @@ impl<T: Sink, U, S> FramedWrite<T, U, S> {
 }
 
 impl<T, U, S> Sink for FramedWrite<T, U, S>
-    where T: Sink<SinkItem = BytesMut, SinkError = io::Error>,
+    where T: Sink<SinkItem = BytesMut>,
           S: Serializer<U>,
-          S::Error: Into<io::Error>,
+          S::Error: Into<T::SinkError>,
 {
     type SinkItem = U;
-    type SinkError = io::Error;
+    type SinkError = T::SinkError;
 
-    fn start_send(&mut self, item: U) -> StartSend<U, io::Error> {
+    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
         if !self.inner.poll_ready().is_ready() {
             return Ok(AsyncSink::NotReady(item));
         }
@@ -374,11 +373,11 @@ impl<T, U, S> Sink for FramedWrite<T, U, S>
         Ok(AsyncSink::Ready)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), io::Error> {
+    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
         self.inner.poll_complete()
     }
 
-    fn close(&mut self) -> Poll<(), io::Error> {
+    fn close(&mut self) -> Poll<(), Self::SinkError> {
         try_ready!(self.poll_complete());
         self.inner.close()
     }
