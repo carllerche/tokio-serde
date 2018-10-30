@@ -24,15 +24,15 @@
 //!
 //! * `tokio_serde_json::JsonRead`
 //! * `tokio_serde::FramedRead`
-//! * `tokio_io::codec::length_delimited::FramedRead`
-//! * `tokio_core::net::TcpStream`
+//! * `tokio::codec::FramedRead`
+//! * `tokio::net::TcpStream`
 //!
 //! The write half looks like:
 //!
 //! * `tokio_serde_json::JsonWrite`
 //! * `tokio_serde::FramedWrite`
-//! * `tokio_io::codec::length_delimited::FramedWrite`
-//! * `tokio_core::net::TcpStream`
+//! * `tokio_io::codec::FramedWrite`
+//! * `tokio::net::TcpStream`
 //!
 //! # Examples
 //!
@@ -83,7 +83,7 @@ use std::marker::PhantomData;
 /// # extern crate bytes;
 ///
 /// use tokio_serde::Serializer;
-/// use bytes::{BytesMut, BufMut, BigEndian};
+/// use bytes::{Bytes, BytesMut, BufMut, BigEndian};
 ///
 /// struct IntSerializer {
 ///     width: usize,
@@ -97,7 +97,7 @@ use std::marker::PhantomData;
 /// impl Serializer<u64> for IntSerializer {
 ///     type Error = Error;
 ///
-///     fn serialize(&mut self, item: &u64) -> Result<BytesMut, Self::Error> {
+///     fn serialize(&mut self, item: &u64) -> Result<Bytes, Self::Error> {
 ///         assert!(self.width <= 8);
 ///
 ///         let max = (1 << (self.width * 8)) - 1;
@@ -108,7 +108,7 @@ use std::marker::PhantomData;
 ///
 ///         let mut ret = BytesMut::with_capacity(self.width);
 ///         ret.put_uint::<BigEndian>(*item, self.width);
-///         Ok(ret)
+///         Ok(ret.into())
 ///     }
 /// }
 ///
@@ -133,7 +133,7 @@ pub trait Serializer<T> {
     /// of internal mutability strategy.
     ///
     /// See the trait level docs for more detail.
-    fn serialize(&mut self, item: &T) -> Result<BytesMut, Self::Error>;
+    fn serialize(&mut self, item: &T) -> Result<Bytes, Self::Error>;
 }
 
 /// Deserializes a value from a source buffer
@@ -159,7 +159,7 @@ pub trait Serializer<T> {
 /// # extern crate bytes;
 ///
 /// use tokio_serde::Deserializer;
-/// use bytes::{Bytes, IntoBuf, Buf, BigEndian};
+/// use bytes::{BytesMut, IntoBuf, Buf, BigEndian};
 ///
 /// struct IntDeserializer {
 ///     width: usize,
@@ -174,7 +174,7 @@ pub trait Serializer<T> {
 /// impl Deserializer<u64> for IntDeserializer {
 ///     type Error = Error;
 ///
-///     fn deserialize(&mut self, buf: &Bytes) -> Result<u64, Self::Error> {
+///     fn deserialize(&mut self, buf: &BytesMut) -> Result<u64, Self::Error> {
 ///         assert!(self.width <= 8);
 ///
 ///         if buf.len() > self.width {
@@ -207,7 +207,7 @@ pub trait Deserializer<T> {
     /// returned. If the deserialization is unsuccessful, an error is returned.
     ///
     /// See the trait level docs for more detail.
-    fn deserialize(&mut self, src: &Bytes) -> Result<T, Self::Error>;
+    fn deserialize(&mut self, src: &BytesMut) -> Result<T, Self::Error>;
 }
 
 /// Adapts a stream of buffers to a stream of values by deserializing them.
@@ -246,7 +246,7 @@ pub struct FramedWrite<T, U, S> where T: Sink {
 
 impl<T, U, S> FramedRead<T, U, S>
     where T: Stream,
-          Bytes: From<T::Item>,
+          BytesMut: From<T::Item>,
           S: Deserializer<U>,
           S::Error: Into<T::Error>,
 {
@@ -293,7 +293,7 @@ impl<T, U, S> FramedRead<T, U, S> {
 impl<T, U, S> Stream for FramedRead<T, U, S>
     where T: Stream,
           T::Error: From<S::Error>,
-          Bytes: From<T::Item>,
+          BytesMut: From<T::Item>,
           S: Deserializer<U>,
 {
     type Item = U;
@@ -311,7 +311,7 @@ impl<T, U, S> Stream for FramedRead<T, U, S>
 }
 
 impl<T, U, S> FramedWrite<T, U, S>
-    where T: Sink<SinkItem = BytesMut>,
+    where T: Sink<SinkItem = Bytes>,
           S: Serializer<U>,
           S::Error: Into<T::SinkError>,
 {
@@ -353,7 +353,7 @@ impl<T: Sink, U, S> FramedWrite<T, U, S> {
 }
 
 impl<T, U, S> Sink for FramedWrite<T, U, S>
-    where T: Sink<SinkItem = BytesMut>,
+    where T: Sink<SinkItem = Bytes>,
           S: Serializer<U>,
           S::Error: Into<T::SinkError>,
 {
