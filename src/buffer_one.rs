@@ -2,10 +2,10 @@
 //
 #![allow(warnings)]
 
-use futures::{Poll, Async};
-use futures::{StartSend, AsyncSink};
 use futures::sink::Sink;
 use futures::stream::Stream;
+use futures::{Async, Poll};
+use futures::{AsyncSink, StartSend};
 
 /// Adds buffering for a single value to the underlying sink.
 ///
@@ -69,27 +69,26 @@ impl<S: Sink> BufferOne<S> {
 
     fn try_empty_buffer(&mut self) -> Poll<(), S::SinkError> {
         match self.buf.take() {
-            Some(Ok(item)) => {
-                match try!(self.sink.start_send(item)) {
-                    AsyncSink::Ready => Ok(Async::Ready(())),
-                    AsyncSink::NotReady(item) => {
-                        self.buf = Some(Ok(item));
+            Some(Ok(item)) => match try!(self.sink.start_send(item)) {
+                AsyncSink::Ready => Ok(Async::Ready(())),
+                AsyncSink::NotReady(item) => {
+                    self.buf = Some(Ok(item));
 
-                        try!(self.sink.poll_complete());
+                    try!(self.sink.poll_complete());
 
-                        Ok(Async::NotReady)
-                    }
+                    Ok(Async::NotReady)
                 }
-            }
+            },
             Some(Err(e)) => Err(e),
-            None => {
-                Ok(Async::Ready(()))
-            }
+            None => Ok(Async::Ready(())),
         }
     }
 }
 
-impl<S> Stream for BufferOne<S> where S: Sink + Stream {
+impl<S> Stream for BufferOne<S>
+where
+    S: Sink + Stream,
+{
     type Item = S::Item;
     type Error = S::Error;
 

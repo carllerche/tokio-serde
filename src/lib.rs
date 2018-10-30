@@ -60,8 +60,8 @@ mod buffer_one;
 
 use buffer_one::BufferOne;
 
-use futures::{Async, AsyncSink, StartSend, Sink, Stream, Poll};
 use bytes::{Bytes, BytesMut};
+use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
 
 use std::marker::PhantomData;
 
@@ -236,7 +236,10 @@ pub struct FramedRead<T, U, S> {
 ///
 /// [length_delimited]: http://docs.rs/tokio-io/codec/length_delimited/index.html
 /// [tokio-io]: http://crates.io/crates/tokio-io
-pub struct FramedWrite<T, U, S> where T: Sink {
+pub struct FramedWrite<T, U, S>
+where
+    T: Sink,
+{
     inner: BufferOne<T>,
     serializer: S,
     item: PhantomData<U>,
@@ -245,10 +248,11 @@ pub struct FramedWrite<T, U, S> where T: Sink {
 // ===== impl FramedRead =====
 
 impl<T, U, S> FramedRead<T, U, S>
-    where T: Stream,
-          BytesMut: From<T::Item>,
-          S: Deserializer<U>,
-          S::Error: Into<T::Error>,
+where
+    T: Stream,
+    BytesMut: From<T::Item>,
+    S: Deserializer<U>,
+    S::Error: Into<T::Error>,
 {
     /// Creates a new `FramedRead` with the given buffer stream and deserializer.
     pub fn new(inner: T, deserializer: S) -> FramedRead<T, U, S> {
@@ -291,10 +295,11 @@ impl<T, U, S> FramedRead<T, U, S> {
 }
 
 impl<T, U, S> Stream for FramedRead<T, U, S>
-    where T: Stream,
-          T::Error: From<S::Error>,
-          BytesMut: From<T::Item>,
-          S: Deserializer<U>,
+where
+    T: Stream,
+    T::Error: From<S::Error>,
+    BytesMut: From<T::Item>,
+    S: Deserializer<U>,
 {
     type Item = U;
     type Error = T::Error;
@@ -311,9 +316,10 @@ impl<T, U, S> Stream for FramedRead<T, U, S>
 }
 
 impl<T, U, S> FramedWrite<T, U, S>
-    where T: Sink<SinkItem = Bytes>,
-          S: Serializer<U>,
-          S::Error: Into<T::SinkError>,
+where
+    T: Sink<SinkItem = Bytes>,
+    S: Serializer<U>,
+    S::Error: Into<T::SinkError>,
 {
     /// Creates a new `FramedWrite` with the given buffer sink and serializer.
     pub fn new(inner: T, serializer: S) -> Self {
@@ -353,9 +359,10 @@ impl<T: Sink, U, S> FramedWrite<T, U, S> {
 }
 
 impl<T, U, S> Sink for FramedWrite<T, U, S>
-    where T: Sink<SinkItem = Bytes>,
-          S: Serializer<U>,
-          S::Error: Into<T::SinkError>,
+where
+    T: Sink<SinkItem = Bytes>,
+    S: Serializer<U>,
+    S::Error: Into<T::SinkError>,
 {
     type SinkItem = U;
     type SinkError = T::SinkError;
