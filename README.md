@@ -17,8 +17,6 @@ tokio-serde = "0.3"
 Next, add this to your crate:
 
 ```rust
-extern crate tokio_serde;
-
 use tokio_serde::{Serializer, Deserializer, FramedRead, FramedWrite};
 ```
 

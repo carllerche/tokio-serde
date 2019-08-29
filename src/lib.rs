@@ -52,18 +52,15 @@
 //! [`FramedWrite`]: trait.FramedWrite.html
 //! [json]: http://github.com/carllerche/tokio-serde-json
 
-#[macro_use]
-extern crate futures;
-extern crate bytes;
-
-mod buffer_one;
-
-use buffer_one::BufferOne;
-
 use bytes::{Bytes, BytesMut};
-use futures::{Async, AsyncSink, Poll, Sink, StartSend, Stream};
+use futures::{prelude::*, ready};
+use pin_utils::unsafe_pinned;
 
-use std::marker::PhantomData;
+use std::{
+    marker::PhantomData,
+    pin::Pin,
+    task::{Context, Poll},
+};
 
 /// Serializes a value into a destination buffer
 ///
@@ -79,11 +76,9 @@ use std::marker::PhantomData;
 /// An integer serializer that allows the width to be configured.
 ///
 /// ```
-/// # extern crate tokio_serde;
-/// # extern crate bytes;
-///
 /// use tokio_serde::Serializer;
 /// use bytes::{Bytes, BytesMut, BufMut, BigEndian};
+/// use std::pin::Pin;
 ///
 /// struct IntSerializer {
 ///     width: usize,
@@ -97,7 +92,7 @@ use std::marker::PhantomData;
 /// impl Serializer<u64> for IntSerializer {
 ///     type Error = Error;
 ///
-///     fn serialize(&mut self, item: &u64) -> Result<Bytes, Self::Error> {
+///     fn serialize(self: Pin<&mut Self>, item: &u64) -> Result<Bytes, Self::Error> {
 ///         assert!(self.width <= 8);
 ///
 ///         let max = (1 << (self.width * 8)) - 1;
@@ -107,7 +102,7 @@ use std::marker::PhantomData;
 ///         }
 ///
 ///         let mut ret = BytesMut::with_capacity(self.width);
-///         ret.put_uint::<BigEndian>(*item, self.width);
+///         ret.put_uint_be(*item, self.width);
 ///         Ok(ret.into())
 ///     }
 /// }
@@ -115,7 +110,7 @@ use std::marker::PhantomData;
 /// # pub fn main() {
 /// let mut serializer = IntSerializer { width: 3 };
 ///
-/// let buf = serializer.serialize(&5).unwrap();
+/// let buf = Pin::new(&mut serializer).serialize(&5).unwrap();
 /// assert_eq!(buf, &b"\x00\x00\x05"[..]);
 /// # }
 /// ```
@@ -133,7 +128,7 @@ pub trait Serializer<T> {
     /// of internal mutability strategy.
     ///
     /// See the trait level docs for more detail.
-    fn serialize(&mut self, item: &T) -> Result<Bytes, Self::Error>;
+    fn serialize(self: Pin<&mut Self>, item: &T) -> Result<Bytes, Self::Error>;
 }
 
 /// Deserializes a value from a source buffer
@@ -160,6 +155,7 @@ pub trait Serializer<T> {
 ///
 /// use tokio_serde::Deserializer;
 /// use bytes::{BytesMut, IntoBuf, Buf, BigEndian};
+/// use std::pin::Pin;
 ///
 /// struct IntDeserializer {
 ///     width: usize,
@@ -174,7 +170,7 @@ pub trait Serializer<T> {
 /// impl Deserializer<u64> for IntDeserializer {
 ///     type Error = Error;
 ///
-///     fn deserialize(&mut self, buf: &BytesMut) -> Result<u64, Self::Error> {
+///     fn deserialize(self: Pin<&mut Self>, buf: &BytesMut) -> Result<u64, Self::Error> {
 ///         assert!(self.width <= 8);
 ///
 ///         if buf.len() > self.width {
@@ -185,7 +181,7 @@ pub trait Serializer<T> {
 ///             return Err(Error::Underflow);
 ///         }
 ///
-///         let ret = buf.into_buf().get_uint::<BigEndian>(self.width);
+///         let ret = buf.into_buf().get_uint_be(self.width);
 ///         Ok(ret)
 ///     }
 /// }
@@ -193,7 +189,7 @@ pub trait Serializer<T> {
 /// # pub fn main() {
 /// let mut deserializer = IntDeserializer { width: 3 };
 ///
-/// let i = deserializer.deserialize(&b"\x00\x00\x05"[..].into()).unwrap();
+/// let i = Pin::new(&mut deserializer).deserialize(&b"\x00\x00\x05"[..].into()).unwrap();
 /// assert_eq!(i, 5);
 /// # }
 /// ```
@@ -207,7 +203,7 @@ pub trait Deserializer<T> {
     /// returned. If the deserialization is unsuccessful, an error is returned.
     ///
     /// See the trait level docs for more detail.
-    fn deserialize(&mut self, src: &BytesMut) -> Result<T, Self::Error>;
+    fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<T, Self::Error>;
 }
 
 /// Adapts a stream of buffers to a stream of values by deserializing them.
@@ -236,35 +232,25 @@ pub struct FramedRead<T, U, S> {
 ///
 /// [length_delimited]: http://docs.rs/tokio-io/codec/length_delimited/index.html
 /// [tokio-io]: http://crates.io/crates/tokio-io
-pub struct FramedWrite<T, U, S>
-where
-    T: Sink,
-{
-    inner: BufferOne<T>,
+pub struct FramedWrite<T, U, S> {
+    inner: T,
     serializer: S,
     item: PhantomData<U>,
 }
 
-// ===== impl FramedRead =====
+impl<T, U, S> FramedRead<T, U, S> {
+    unsafe_pinned!(inner: T);
+    unsafe_pinned!(deserializer: S);
 
-impl<T, U, S> FramedRead<T, U, S>
-where
-    T: Stream,
-    BytesMut: From<T::Item>,
-    S: Deserializer<U>,
-    S::Error: Into<T::Error>,
-{
     /// Creates a new `FramedRead` with the given buffer stream and deserializer.
     pub fn new(inner: T, deserializer: S) -> FramedRead<T, U, S> {
         FramedRead {
-            inner: inner,
-            deserializer: deserializer,
+            inner,
+            deserializer,
             item: PhantomData,
         }
     }
-}
 
-impl<T, U, S> FramedRead<T, U, S> {
     /// Returns a reference to the underlying stream wrapped by `FramedRead`.
     ///
     /// Note that care should be taken to not tamper with the underlying stream
@@ -296,48 +282,65 @@ impl<T, U, S> FramedRead<T, U, S> {
 
 impl<T, U, S> Stream for FramedRead<T, U, S>
 where
-    T: Stream,
+    T: TryStream<Ok = BytesMut>,
     T::Error: From<S::Error>,
-    BytesMut: From<T::Item>,
+    BytesMut: From<T::Ok>,
     S: Deserializer<U>,
 {
-    type Item = U;
-    type Error = T::Error;
+    type Item = Result<U, T::Error>;
 
-    fn poll(&mut self) -> Poll<Option<Self::Item>, Self::Error> {
-        match try_ready!(self.inner.poll()) {
+    fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        match ready!(self.as_mut().inner().try_poll_next(cx)) {
             Some(bytes) => {
-                let val = try!(self.deserializer.deserialize(&bytes.into()));
-                Ok(Async::Ready(Some(val)))
+                Poll::Ready(Some(Ok(self.deserializer().deserialize(&bytes?.into())?)))
             }
-            None => Ok(Async::Ready(None)),
+            None => Poll::Ready(None),
         }
     }
 }
 
-impl<T, U, S> FramedWrite<T, U, S>
+impl<T, U, S, SinkItem> Sink<SinkItem> for FramedRead<T, U, S>
 where
-    T: Sink<SinkItem = Bytes>,
-    S: Serializer<U>,
-    S::Error: Into<T::SinkError>,
+    T: Sink<SinkItem>,
 {
+    type Error = T::Error;
+
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner().poll_ready(cx)
+    }
+
+    fn start_send(self: Pin<&mut Self>, item: SinkItem) -> Result<(), Self::Error> {
+        self.inner().start_send(item)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner().poll_flush(cx)
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner().poll_close(cx)
+    }
+}
+
+impl<T, U, S> FramedWrite<T, U, S> {
+    unsafe_pinned!(inner: T);
+    unsafe_pinned!(serializer: S);
+
     /// Creates a new `FramedWrite` with the given buffer sink and serializer.
     pub fn new(inner: T, serializer: S) -> Self {
         FramedWrite {
-            inner: BufferOne::new(inner),
-            serializer: serializer,
+            inner,
+            serializer,
             item: PhantomData,
         }
     }
-}
 
-impl<T: Sink, U, S> FramedWrite<T, U, S> {
     /// Returns a reference to the underlying sink wrapped by `FramedWrite`.
     ///
     /// Note that care should be taken to not tamper with the underlying sink as
     /// it may corrupt the sequence of frames otherwise being worked with.
     pub fn get_ref(&self) -> &T {
-        self.inner.get_ref()
+        &self.inner
     }
 
     /// Returns a mutable reference to the underlying sink wrapped by
@@ -346,7 +349,7 @@ impl<T: Sink, U, S> FramedWrite<T, U, S> {
     /// Note that care should be taken to not tamper with the underlying sink as
     /// it may corrupt the sequence of frames otherwise being worked with.
     pub fn get_mut(&mut self) -> &mut T {
-        self.inner.get_mut()
+        &mut self.inner
     }
 
     /// Consumes the `FramedWrite`, returning its underlying sink.
@@ -354,38 +357,48 @@ impl<T: Sink, U, S> FramedWrite<T, U, S> {
     /// Note that care should be taken to not tamper with the underlying sink as
     /// it may corrupt the sequence of frames otherwise being worked with.
     pub fn into_inner(self) -> T {
-        self.inner.into_inner()
+        self.inner
     }
 }
 
-impl<T, U, S> Sink for FramedWrite<T, U, S>
+impl<T, U, S> Stream for FramedWrite<T, U, S>
 where
-    T: Sink<SinkItem = Bytes>,
-    S: Serializer<U>,
-    S::Error: Into<T::SinkError>,
+    T: Stream,
 {
-    type SinkItem = U;
-    type SinkError = T::SinkError;
+    type Item = T::Item;
 
-    fn start_send(&mut self, item: Self::SinkItem) -> StartSend<Self::SinkItem, Self::SinkError> {
-        if !self.inner.poll_ready().is_ready() {
-            return Ok(AsyncSink::NotReady(item));
-        }
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+        self.inner().poll_next(cx)
+    }
+}
 
-        let res = self.serializer.serialize(&item);
-        let bytes = try!(res.map_err(Into::into));
+impl<T, U, S> Sink<U> for FramedWrite<T, U, S>
+where
+    T: Sink<Bytes>,
+    S: Serializer<U>,
+    S::Error: Into<T::Error>,
+{
+    type Error = T::Error;
 
-        assert!(try!(self.inner.start_send(bytes)).is_ready());
-
-        Ok(AsyncSink::Ready)
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner().poll_ready(cx)
     }
 
-    fn poll_complete(&mut self) -> Poll<(), Self::SinkError> {
-        self.inner.poll_complete()
+    fn start_send(mut self: Pin<&mut Self>, item: U) -> Result<(), Self::Error> {
+        let res = self.as_mut().serializer().serialize(&item);
+        let bytes = res.map_err(Into::into)?;
+
+        self.inner().start_send(bytes)?;
+
+        Ok(())
     }
 
-    fn close(&mut self) -> Poll<(), Self::SinkError> {
-        try_ready!(self.poll_complete());
-        self.inner.close()
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner().poll_flush(cx)
+    }
+
+    fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        ready!(self.as_mut().poll_flush(cx))?;
+        self.inner().poll_close(cx)
     }
 }
