@@ -52,14 +52,15 @@
 //! [`FramedWrite`]: trait.FramedWrite.html
 //! [json]: http://github.com/carllerche/tokio-serde-json
 
-use bytes::{Bytes, BytesMut};
-use futures::{prelude::*, ready};
-use pin_utils::unsafe_pinned;
-
-use std::{
-    marker::PhantomData,
-    pin::Pin,
-    task::{Context, Poll},
+use {
+    bytes::{Bytes, BytesMut},
+    futures::{prelude::*, ready},
+    pin_project::pin_project,
+    std::{
+        marker::PhantomData,
+        pin::Pin,
+        task::{Context, Poll},
+    },
 };
 
 /// Serializes a value into a destination buffer
@@ -215,8 +216,11 @@ pub trait Deserializer<T> {
 ///
 /// [length_delimited]: http://docs.rs/tokio-io/codec/length_delimited/index.html
 /// [tokio-io]: http://crates.io/crates/tokio-io
+#[pin_project]
 pub struct FramedRead<T, U, S> {
+    #[pin]
     inner: T,
+    #[pin]
     deserializer: S,
     item: PhantomData<U>,
 }
@@ -232,16 +236,16 @@ pub struct FramedRead<T, U, S> {
 ///
 /// [length_delimited]: http://docs.rs/tokio-io/codec/length_delimited/index.html
 /// [tokio-io]: http://crates.io/crates/tokio-io
+#[pin_project]
 pub struct FramedWrite<T, U, S> {
+    #[pin]
     inner: T,
+    #[pin]
     serializer: S,
     item: PhantomData<U>,
 }
 
 impl<T, U, S> FramedRead<T, U, S> {
-    unsafe_pinned!(inner: T);
-    unsafe_pinned!(deserializer: S);
-
     /// Creates a new `FramedRead` with the given buffer stream and deserializer.
     pub fn new(inner: T, deserializer: S) -> FramedRead<T, U, S> {
         FramedRead {
@@ -290,10 +294,12 @@ where
     type Item = Result<U, T::Error>;
 
     fn poll_next(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        match ready!(self.as_mut().inner().try_poll_next(cx)) {
-            Some(bytes) => {
-                Poll::Ready(Some(Ok(self.deserializer().deserialize(&bytes?.into())?)))
-            }
+        match ready!(self.as_mut().project().inner.try_poll_next(cx)) {
+            Some(bytes) => Poll::Ready(Some(Ok(self
+                .as_mut()
+                .project()
+                .deserializer
+                .deserialize(&bytes?.into())?))),
             None => Poll::Ready(None),
         }
     }
@@ -306,26 +312,23 @@ where
     type Error = T::Error;
 
     fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner().poll_ready(cx)
+        self.project().inner.poll_ready(cx)
     }
 
     fn start_send(self: Pin<&mut Self>, item: SinkItem) -> Result<(), Self::Error> {
-        self.inner().start_send(item)
+        self.project().inner.start_send(item)
     }
 
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner().poll_flush(cx)
+        self.project().inner.poll_flush(cx)
     }
 
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner().poll_close(cx)
+        self.project().inner.poll_close(cx)
     }
 }
 
 impl<T, U, S> FramedWrite<T, U, S> {
-    unsafe_pinned!(inner: T);
-    unsafe_pinned!(serializer: S);
-
     /// Creates a new `FramedWrite` with the given buffer sink and serializer.
     pub fn new(inner: T, serializer: S) -> Self {
         FramedWrite {
@@ -368,7 +371,7 @@ where
     type Item = T::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
-        self.inner().poll_next(cx)
+        self.project().inner.poll_next(cx)
     }
 }
 
@@ -381,24 +384,24 @@ where
     type Error = T::Error;
 
     fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner().poll_ready(cx)
+        self.project().inner.poll_ready(cx)
     }
 
     fn start_send(mut self: Pin<&mut Self>, item: U) -> Result<(), Self::Error> {
-        let res = self.as_mut().serializer().serialize(&item);
+        let res = self.as_mut().project().serializer.serialize(&item);
         let bytes = res.map_err(Into::into)?;
 
-        self.inner().start_send(bytes)?;
+        self.as_mut().project().inner.start_send(bytes)?;
 
         Ok(())
     }
 
     fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.inner().poll_flush(cx)
+        self.project().inner.poll_flush(cx)
     }
 
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         ready!(self.as_mut().poll_flush(cx))?;
-        self.inner().poll_close(cx)
+        self.project().inner.poll_close(cx)
     }
 }
