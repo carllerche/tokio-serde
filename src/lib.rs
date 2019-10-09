@@ -78,7 +78,7 @@ use {
 ///
 /// ```
 /// use tokio_serde::Serializer;
-/// use bytes::{Bytes, BytesMut, BufMut, BigEndian};
+/// use bytes::{Buf, Bytes, BytesMut, BufMut};
 /// use std::pin::Pin;
 ///
 /// struct IntSerializer {
@@ -103,17 +103,15 @@ use {
 ///         }
 ///
 ///         let mut ret = BytesMut::with_capacity(self.width);
-///         ret.put_uint_be(*item, self.width);
-///         Ok(ret.into())
+///         ret.put_uint(*item, self.width);
+///         Ok(ret.to_bytes())
 ///     }
 /// }
 ///
-/// # pub fn main() {
 /// let mut serializer = IntSerializer { width: 3 };
 ///
 /// let buf = Pin::new(&mut serializer).serialize(&5).unwrap();
 /// assert_eq!(buf, &b"\x00\x00\x05"[..]);
-/// # }
 /// ```
 pub trait Serializer<T> {
     type Error;
@@ -151,11 +149,8 @@ pub trait Serializer<T> {
 /// An integer deserializer that allows the width to be configured.
 ///
 /// ```
-/// # extern crate tokio_serde;
-/// # extern crate bytes;
-///
 /// use tokio_serde::Deserializer;
-/// use bytes::{BytesMut, IntoBuf, Buf, BigEndian};
+/// use bytes::{BytesMut, Buf};
 /// use std::pin::Pin;
 ///
 /// struct IntDeserializer {
@@ -182,17 +177,15 @@ pub trait Serializer<T> {
 ///             return Err(Error::Underflow);
 ///         }
 ///
-///         let ret = buf.into_buf().get_uint_be(self.width);
+///         let ret = std::io::Cursor::new(buf).get_uint(self.width);
 ///         Ok(ret)
 ///     }
 /// }
 ///
-/// # pub fn main() {
 /// let mut deserializer = IntDeserializer { width: 3 };
 ///
 /// let i = Pin::new(&mut deserializer).deserialize(&b"\x00\x00\x05"[..].into()).unwrap();
 /// assert_eq!(i, 5);
-/// # }
 /// ```
 pub trait Deserializer<T> {
     type Error;
@@ -299,7 +292,7 @@ where
                 .as_mut()
                 .project()
                 .deserializer
-                .deserialize(&bytes?.into())?))),
+                .deserialize(&bytes?)?))),
             None => Poll::Ready(None),
         }
     }
@@ -403,5 +396,132 @@ where
     fn poll_close(mut self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         ready!(self.as_mut().poll_flush(cx))?;
         self.project().inner.poll_close(cx)
+    }
+}
+
+#[cfg(any(feature = "json", feature = "bincode", feature = "messagepack"))]
+pub mod formats {
+    #[cfg(feature = "bincode")]
+    pub use self::bincode::Bincode;
+    #[cfg(feature = "json")]
+    pub use self::json::Json;
+    #[cfg(feature = "messagepack")]
+    pub use self::messagepack::MessagePack;
+
+    use {
+        super::{Deserializer, Serializer},
+        bytes::{buf::BufExt, Bytes, BytesMut},
+        derivative::Derivative,
+        serde::{Deserialize, Serialize},
+        std::{io, marker::PhantomData, pin::Pin},
+    };
+
+    #[cfg(feature = "bincode")]
+    mod bincode {
+        use super::*;
+
+        #[derive(Derivative)]
+        #[derivative(Default(bound = ""))]
+        pub struct Bincode<T> {
+            ghost: PhantomData<T>,
+        }
+
+        impl<T> Deserializer<T> for Bincode<T>
+        where
+            T: for<'de> Deserialize<'de>,
+        {
+            type Error = io::Error;
+
+            fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<T, Self::Error> {
+                Ok(serde_bincode::deserialize(src)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?)
+            }
+        }
+
+        impl<T> Serializer<T> for Bincode<T>
+        where
+            T: Serialize,
+        {
+            type Error = io::Error;
+
+            fn serialize(self: Pin<&mut Self>, item: &T) -> Result<Bytes, Self::Error> {
+                Ok(serde_bincode::serialize(item)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                    .into())
+            }
+        }
+    }
+
+    #[cfg(feature = "json")]
+    mod json {
+        use super::*;
+
+        #[derive(Derivative)]
+        #[derivative(Default(bound = ""))]
+        pub struct Json<T> {
+            ghost: PhantomData<T>,
+        }
+
+        impl<T> Deserializer<T> for Json<T>
+        where
+            for<'a> T: Deserialize<'a>,
+        {
+            type Error = serde_json::Error;
+
+            fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<T, Self::Error> {
+                serde_json::from_reader(std::io::Cursor::new(src).reader())
+            }
+        }
+
+        impl<T> Serializer<T> for Json<T>
+        where
+            T: Serialize,
+        {
+            type Error = serde_json::Error;
+
+            fn serialize(self: Pin<&mut Self>, item: &T) -> Result<Bytes, Self::Error> {
+                serde_json::to_vec(item).map(Into::into)
+            }
+        }
+    }
+
+    #[cfg(feature = "messagepack")]
+    mod messagepack {
+        use super::*;
+
+        use std::io;
+
+        #[derive(Derivative)]
+        #[derivative(Default(bound = ""))]
+        pub struct MessagePack<T> {
+            ghost: PhantomData<T>,
+        }
+
+        impl<T> Deserializer<T> for MessagePack<T>
+        where
+            for<'a> T: Deserialize<'a>,
+        {
+            type Error = io::Error;
+
+            fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<T, Self::Error> {
+                Ok(
+                    serde_messagepack::from_read(std::io::Cursor::new(src).reader())
+                        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+                )
+            }
+        }
+
+        impl<T> Serializer<T> for MessagePack<T>
+        where
+            T: Serialize,
+        {
+            type Error = io::Error;
+
+            fn serialize(self: Pin<&mut Self>, item: &T) -> Result<Bytes, Self::Error> {
+                Ok(serde_messagepack::to_vec(item)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                    .into())
+            }
+        }
     }
 }

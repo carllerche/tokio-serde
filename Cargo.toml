@@ -17,6 +17,22 @@ libraries.
 """
 
 [dependencies]
-bytes = "0.4"
-futures-preview = "0.3.0-alpha"
+bytes = "0.5"
+derivative = { version = "1", optional = true }
+futures = "0.3"
 pin-project = "0.4"
+serde = { version = "1", optional = true }
+serde_bincode = { package = "bincode", version = "1", optional = true }
+serde_json = { version = "1", optional = true }
+serde_messagepack = { package = "rmp-serde", version = "0.14", optional = true }
+
+[dev-dependencies]
+tokio = { version = "0.2", features = ["full"] }
+tokio-serde = { path = ".", features = ["bincode", "json", "messagepack"] }
+tokio-util = { version = "0.2", features = ["full"] }
+static_assertions = "1.1.0"
+
+[features]
+bincode = ["derivative", "serde", "serde_bincode"]
+json = ["derivative", "serde", "serde_json"]
+messagepack = ["derivative", "serde", "serde_messagepack"]
