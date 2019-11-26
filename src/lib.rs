@@ -2,11 +2,6 @@
 //! transport using [serde] for serialization and deserialization of frame
 //! values.
 //!
-//! **Note**, if you are an end user, you probably won't want to use this crate directly.
-//! Instead, use a `tokio-serde-*` crate that implements a specific
-//! serialization format. For example [tokio-serde-json] uses [serde-json] to
-//! serialize and deserialize frames.
-//!
 //! # Introduction
 //!
 //! This crate provides [transport] combinators that transform a stream of
@@ -16,41 +11,36 @@
 //!
 //! The crate provides two traits that must be implemented: [`Serializer`] and
 //! [`Deserializer`]. Implementations of these traits are then passed to
-//! [`FramedRead`] or [`FramedWrite`] along with the upsteram [`Stream`] or
+//! [`FramedRead`] or [`FramedWrite`] along with the upstream [`Stream`] or
 //! [`Sink`] that handles the byte encoded frames.
 //!
 //! By doing this, a transformation pipeline is built. For reading [json], it looks
 //! something like this:
 //!
-//! * `tokio_serde_json::JsonRead`
 //! * `tokio_serde::FramedRead`
 //! * `tokio::codec::FramedRead`
 //! * `tokio::net::TcpStream`
 //!
 //! The write half looks like:
 //!
-//! * `tokio_serde_json::JsonWrite`
 //! * `tokio_serde::FramedWrite`
 //! * `tokio_io::codec::FramedWrite`
 //! * `tokio::net::TcpStream`
 //!
 //! # Examples
 //!
-//! For an example, see how [tokio-serde-json] is implemented:
+//! For an example, see how JSON support is implemented:
 //!
-//! * [adapter](https://github.com/carllerche/tokio-serde-json/blob/master/src/lib.rs).
-//! * [server](https://github.com/carllerche/tokio-serde-json/blob/master/examples/server.rs)
-//! * [client](https://github.com/carllerche/tokio-serde-json/blob/master/examples/client.rs)
+//! * [server](https://github.com/carllerche/tokio-serde/blob/master/examples/server.rs)
+//! * [client](https://github.com/carllerche/tokio-serde/blob/master/examples/client.rs)
 //!
 //! [serde]: https://serde.rs
-//! [tokio-serde-json]: http://github.com/carllerche/tokio-serde-json
 //! [serde-json]: https://github.com/serde-rs/json
 //! [transport]: https://tokio.rs/docs/going-deeper/transports/
 //! [`Serializer`]: trait.Serializer.html
 //! [`Deserializer`]: trait.Deserializer.html
 //! [`FramedRead`]: struct.FramedRead.html
 //! [`FramedWrite`]: trait.FramedWrite.html
-//! [json]: http://github.com/carllerche/tokio-serde-json
 
 use {
     bytes::{Bytes, BytesMut},
