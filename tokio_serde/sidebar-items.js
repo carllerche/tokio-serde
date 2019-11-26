@@ -1,0 +1,1 @@
+initSidebarItems({"struct":[["FramedRead","Adapts a stream of buffers to a stream of values by deserializing them."],["FramedWrite","Adapts a buffer sink to a value sink by serializing the values."]],"trait":[["Deserializer","Deserializes a value from a source buffer"],["Serializer","Serializes a value into a destination buffer"]]});
