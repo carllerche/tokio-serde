@@ -28,7 +28,6 @@ serde_messagepack = { package = "rmp-serde", version = "0.14", optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-tokio-serde = { path = ".", features = ["bincode", "json", "messagepack"] }
 tokio-util = { version = "0.2", features = ["full"] }
 static_assertions = "1.1.0"
 
@@ -36,3 +35,11 @@ static_assertions = "1.1.0"
 bincode = ["derivative", "serde", "serde_bincode"]
 json = ["derivative", "serde", "serde_json"]
 messagepack = ["derivative", "serde", "serde_messagepack"]
+
+[[example]]
+name = "client"
+required-features = ["bincode", "json", "messagepack"]
+
+[[example]]
+name = "server"
+required-features = ["bincode", "json", "messagepack"]
