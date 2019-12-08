@@ -3,7 +3,7 @@
 Utilities needed to easily implement a Tokio transport using [serde] for
 serialization and deserialization of frame values.
 
-[Documentation](https://carllerche.github.io/tokio-serde/tokio_serde/index.html)
+[Documentation](https://docs.rs/tokio-serde)
 
 ## Usage
 
@@ -11,13 +11,13 @@ To use `tokio-serde`, first add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tokio-serde = "0.5"
+tokio-serde = "0.6"
 ```
 
 Next, add this to your crate:
 
 ```rust
-use tokio_serde::{Serializer, Deserializer, FramedRead, FramedWrite};
+use tokio_serde::{Serializer, Deserializer, Framed};
 ```
 
 [serde]: https://serde.rs

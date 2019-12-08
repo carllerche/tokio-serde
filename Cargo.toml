@@ -1,8 +1,12 @@
 [package]
 name = "tokio-serde"
-version = "0.5.1"
+version = "0.6.0"
 edition = "2018"
-authors = ["Carl Lerche <me@carllerche.com>"]
+authors = [
+    "Carl Lerche <me@carllerche.com>",
+    "Artem Vorotnikov <artem@vorotnikov.me>",
+    "Bastian Köcher <git@kchr.de>",
+]
 license = "MIT/Apache-2.0"
 readme = "README.md"
 keywords = []
@@ -22,9 +26,9 @@ derivative = { version = "1", optional = true }
 futures = "0.3"
 pin-project = "0.4"
 serde = { version = "1", optional = true }
-serde_bincode = { package = "bincode", version = "1", optional = true }
+bincode-crate = { package = "bincode", version = "1", optional = true }
 serde_json = { version = "1", optional = true }
-serde_messagepack = { package = "rmp-serde", version = "0.14", optional = true }
+rmp-serde = { version = "0.14", optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
@@ -32,9 +36,9 @@ tokio-util = { version = "0.2", features = ["full"] }
 static_assertions = "1.1.0"
 
 [features]
-bincode = ["derivative", "serde", "serde_bincode"]
+bincode = ["derivative", "serde", "bincode-crate"]
 json = ["derivative", "serde", "serde_json"]
-messagepack = ["derivative", "serde", "serde_messagepack"]
+messagepack = ["derivative", "serde", "rmp-serde"]
 
 [[example]]
 name = "client"
