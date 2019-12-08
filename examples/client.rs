@@ -13,7 +13,8 @@ pub async fn main() {
     let length_delimited = FramedWrite::new(socket, LengthDelimitedCodec::new());
 
     // Serialize frames with JSON
-    let mut serialized = tokio_serde::FramedWrite::new(length_delimited, Json::default());
+    let mut serialized =
+        tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
 
     // Send the value
     serialized

@@ -18,8 +18,10 @@ pub async fn main() {
         let length_delimited = FramedRead::new(socket, LengthDelimitedCodec::new());
 
         // Deserialize frames
-        let mut deserialized =
-            tokio_serde::FramedRead::new(length_delimited, Json::<Value>::default());
+        let mut deserialized = tokio_serde::SymmetricallyFramed::new(
+            length_delimited,
+            SymmetricalJson::<Value>::default(),
+        );
 
         // Spawn a task that prints all received messages to STDOUT
         tokio::spawn(async move {
