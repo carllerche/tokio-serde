@@ -474,7 +474,7 @@ pub mod formats {
             type Error = io::Error;
 
             fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
-                serde_cbor::from_slice(src.as_ref()).map_err(|e| into_io_error(e))
+                serde_cbor::from_slice(src.as_ref()).map_err(into_io_error)
             }
         }
 
@@ -486,19 +486,27 @@ pub mod formats {
 
             fn serialize(self: Pin<&mut Self>, item: &SinkItem) -> Result<Bytes, Self::Error> {
                 serde_cbor::to_vec(item)
-                    .map_err(|e| into_io_error(e))
+                    .map_err(into_io_error)
                     .map(Into::into)
             }
         }
 
         fn into_io_error(cbor_err: serde_cbor::Error) -> io::Error {
-            use {io::ErrorKind, serde_cbor::error::Category};
+            use {io::ErrorKind, serde_cbor::error::Category, std::error::Error};
 
             match cbor_err.classify() {
                 Category::Eof => io::Error::new(ErrorKind::UnexpectedEof, cbor_err),
                 Category::Syntax => io::Error::new(ErrorKind::InvalidInput, cbor_err),
                 Category::Data => io::Error::new(ErrorKind::InvalidData, cbor_err),
-                Category::Io => io::Error::new(ErrorKind::Other, cbor_err),
+                Category::Io => {
+                    // Extract the underlying io error's type
+                    let kind = cbor_err
+                        .source()
+                        .and_then(|err| err.downcast_ref::<io::Error>())
+                        .map(|io_err| io_err.kind())
+                        .unwrap_or(ErrorKind::Other);
+                    io::Error::new(kind, cbor_err)
+                }
             }
         }
     }
