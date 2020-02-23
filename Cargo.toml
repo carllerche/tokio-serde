@@ -29,7 +29,7 @@ serde = { version = "1", optional = true }
 bincode-crate = { package = "bincode", version = "1", optional = true }
 serde_json = { version = "1", optional = true }
 rmp-serde = { version = "0.14", optional = true }
-serde_cbor = { version = "0.11.1", optional = true }
+serde_cbor = { version = "0.11.*", optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
@@ -44,8 +44,8 @@ cbor = ["serde", "serde_cbor"]
 
 [[example]]
 name = "client"
-required-features = ["bincode", "json", "messagepack"]
+required-features = ["bincode", "json", "messagepack", "cbor"]
 
 [[example]]
 name = "server"
-required-features = ["bincode", "json", "messagepack"]
+required-features = ["bincode", "json", "messagepack", "cbor"]
