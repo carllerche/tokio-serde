@@ -22,7 +22,6 @@ libraries.
 
 [dependencies]
 bytes = "0.5"
-derivative = { version = "1", optional = true }
 futures = "0.3"
 pin-project = "0.4"
 serde = { version = "1", optional = true }
@@ -36,9 +35,9 @@ tokio-util = { version = "0.2", features = ["full"] }
 static_assertions = "1.1.0"
 
 [features]
-bincode = ["derivative", "serde", "bincode-crate"]
-json = ["derivative", "serde", "serde_json"]
-messagepack = ["derivative", "serde", "rmp-serde"]
+bincode = ["serde", "bincode-crate"]
+json = ["serde", "serde_json"]
+messagepack = ["serde", "rmp-serde"]
 
 [[example]]
 name = "client"

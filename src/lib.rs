@@ -324,7 +324,6 @@ pub mod formats {
     use {
         super::{Deserializer, Serializer},
         bytes::{buf::BufExt, Bytes, BytesMut},
-        derivative::Derivative,
         serde::{Deserialize, Serialize},
         std::{io, marker::PhantomData, pin::Pin},
     };
@@ -335,14 +334,18 @@ pub mod formats {
 
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
         #[cfg_attr(feature = "docs", doc(cfg(bincode)))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
         pub struct Bincode<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
         #[cfg_attr(feature = "docs", doc(cfg(bincode)))]
         pub type SymmetricalBincode<T> = Bincode<T, T>;
+
+        impl<Item, SinkItem> Default for Bincode<Item, SinkItem> {
+            fn default() -> Self {
+                Bincode { ghost: PhantomData }
+            }
+        }
 
         impl<Item, SinkItem> Deserializer<Item> for Bincode<Item, SinkItem>
         where
@@ -376,14 +379,18 @@ pub mod formats {
 
         /// JSON codec using [serde_json](https://docs.rs/serde_json) crate.
         #[cfg_attr(feature = "docs", doc(cfg(json)))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
         pub struct Json<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
         #[cfg_attr(feature = "docs", doc(cfg(json)))]
         pub type SymmetricalJson<T> = Json<T, T>;
+
+        impl<Item, SinkItem> Default for Json<Item, SinkItem> {
+            fn default() -> Self {
+                Json { ghost: PhantomData }
+            }
+        }
 
         impl<Item, SinkItem> Deserializer<Item> for Json<Item, SinkItem>
         where
@@ -416,14 +423,18 @@ pub mod formats {
 
         /// MessagePack codec using [rmp-serde](https://docs.rs/rmp-serde) crate.
         #[cfg_attr(feature = "docs", doc(cfg(messagepack)))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
         pub struct MessagePack<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
         #[cfg_attr(feature = "docs", doc(cfg(messagepack)))]
         pub type SymmetricalMessagePack<T> = MessagePack<T, T>;
+
+        impl<Item, SinkItem> Default for MessagePack<Item, SinkItem> {
+            fn default() -> Self {
+                MessagePack { ghost: PhantomData }
+            }
+        }
 
         impl<Item, SinkItem> Deserializer<Item> for MessagePack<Item, SinkItem>
         where
