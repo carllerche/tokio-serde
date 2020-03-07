@@ -459,7 +459,8 @@ pub mod formats {
 
         /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
         #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
-        #[derive(Default)]
+        #[derive(Derivative)]
+        #[derivative(Default(bound = ""))]
         pub struct Cbor<Item, SinkItem> {
             _mkr: PhantomData<(Item, SinkItem)>,
         }
