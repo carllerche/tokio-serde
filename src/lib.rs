@@ -489,7 +489,9 @@ pub mod formats {
         }
 
         fn into_io_error(cbor_err: serde_cbor::Error) -> io::Error {
-            use {io::ErrorKind, serde_cbor::error::Category, std::error::Error};
+            use io::ErrorKind;
+            use serde_cbor::error::Category;
+            use std::error::Error;
 
             match cbor_err.classify() {
                 Category::Eof => io::Error::new(ErrorKind::UnexpectedEof, cbor_err),
