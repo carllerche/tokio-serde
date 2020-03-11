@@ -44,15 +44,13 @@
 //! [`Stream`]: https://docs.rs/futures/0.3/futures/stream/trait.Stream.html
 //! [`Sink`]: https://docs.rs/futures/0.3/futures/sink/trait.Sink.html
 
-use {
-    bytes::{Bytes, BytesMut},
-    futures::{prelude::*, ready},
-    pin_project::pin_project,
-    std::{
-        marker::PhantomData,
-        pin::Pin,
-        task::{Context, Poll},
-    },
+use bytes::{Bytes, BytesMut};
+use futures::{prelude::*, ready};
+use pin_project::pin_project;
+use std::{
+    marker::PhantomData,
+    pin::Pin,
+    task::{Context, Poll},
 };
 
 /// Serializes a value into a destination buffer
@@ -321,13 +319,11 @@ pub mod formats {
     #[cfg(feature = "messagepack")]
     pub use self::messagepack::*;
 
-    use {
-        super::{Deserializer, Serializer},
-        bytes::{buf::BufExt, Bytes, BytesMut},
-        derivative::Derivative,
-        serde::{Deserialize, Serialize},
-        std::{io, marker::PhantomData, pin::Pin},
-    };
+    use super::{Deserializer, Serializer};
+    use bytes::{buf::BufExt, Bytes, BytesMut};
+    use derivative::Derivative;
+    use serde::{Deserialize, Serialize};
+    use std::{io, marker::PhantomData, pin::Pin};
 
     #[cfg(feature = "bincode")]
     mod bincode {
