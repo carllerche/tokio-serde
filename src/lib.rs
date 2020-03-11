@@ -314,6 +314,8 @@ pub type SymmetricallyFramed<Transport, Value, Codec> = Framed<Transport, Value,
 pub mod formats {
     #[cfg(feature = "bincode")]
     pub use self::bincode::*;
+    #[cfg(feature = "cbor")]
+    pub use self::cbor::*;
     #[cfg(feature = "json")]
     pub use self::json::*;
     #[cfg(feature = "messagepack")]
@@ -443,6 +445,65 @@ pub mod formats {
                 Ok(rmp_serde::to_vec(item)
                     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
                     .into())
+            }
+        }
+    }
+
+    #[cfg(feature = "cbor")]
+    mod cbor {
+        use super::*;
+
+        /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
+        #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
+        #[derive(Derivative)]
+        #[derivative(Default(bound = ""))]
+        pub struct Cbor<Item, SinkItem> {
+            _mkr: PhantomData<(Item, SinkItem)>,
+        }
+
+        #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
+        pub type SymmetricalCbor<T> = Cbor<T, T>;
+
+        impl<Item, SinkItem> Deserializer<Item> for Cbor<Item, SinkItem>
+        where
+            for<'a> Item: Deserialize<'a>,
+        {
+            type Error = io::Error;
+
+            fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
+                serde_cbor::from_slice(src.as_ref()).map_err(into_io_error)
+            }
+        }
+
+        impl<Item, SinkItem> Serializer<SinkItem> for Cbor<Item, SinkItem>
+        where
+            SinkItem: Serialize,
+        {
+            type Error = io::Error;
+
+            fn serialize(self: Pin<&mut Self>, item: &SinkItem) -> Result<Bytes, Self::Error> {
+                serde_cbor::to_vec(item)
+                    .map_err(into_io_error)
+                    .map(Into::into)
+            }
+        }
+
+        fn into_io_error(cbor_err: serde_cbor::Error) -> io::Error {
+            use {io::ErrorKind, serde_cbor::error::Category, std::error::Error};
+
+            match cbor_err.classify() {
+                Category::Eof => io::Error::new(ErrorKind::UnexpectedEof, cbor_err),
+                Category::Syntax => io::Error::new(ErrorKind::InvalidInput, cbor_err),
+                Category::Data => io::Error::new(ErrorKind::InvalidData, cbor_err),
+                Category::Io => {
+                    // Extract the underlying io error's type
+                    let kind = cbor_err
+                        .source()
+                        .and_then(|err| err.downcast_ref::<io::Error>())
+                        .map(|io_err| io_err.kind())
+                        .unwrap_or(ErrorKind::Other);
+                    io::Error::new(kind, cbor_err)
+                }
             }
         }
     }
