@@ -22,7 +22,7 @@ libraries.
 
 [dependencies]
 bytes = "0.5"
-derivative = { version = "1", optional = true }
+derivative = { version = "2", optional = true }
 futures = "0.3"
 pin-project = "0.4"
 serde = { version = "1", optional = true }
@@ -32,7 +32,7 @@ rmp-serde = { version = "0.14", optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.2", features = ["full"] }
-tokio-util = { version = "0.2", features = ["full"] }
+tokio-util = { version = "0.3", features = ["full"] }
 static_assertions = "1.1.0"
 
 [features]
