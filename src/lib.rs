@@ -306,10 +306,20 @@ where
 
 pub type SymmetricallyFramed<Transport, Value, Codec> = Framed<Transport, Value, Value, Codec>;
 
-#[cfg(any(feature = "json", feature = "bincode", feature = "messagepack"))]
+#[cfg(any(
+    feature = "json",
+    feature = "bincode",
+    feature = "messagepack",
+    feature = "cbor"
+))]
 #[cfg_attr(
     docs,
-    doc(cfg(any(feature = "json", feature = "bincode", feature = "messagepack")))
+    doc(cfg(any(
+        feature = "json",
+        feature = "bincode",
+        feature = "messagepack",
+        feature = "cbor"
+    )))
 )]
 pub mod formats {
     #[cfg(feature = "bincode")]
