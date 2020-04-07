@@ -208,6 +208,7 @@ pub trait Deserializer<T> {
 /// [length_delimited]: http://docs.rs/tokio-util/0.2/tokio_util/codec/length_delimited/index.html
 /// [tokio-util]: http://crates.io/crates/tokio-util
 #[pin_project]
+#[derive(Debug)]
 pub struct Framed<Transport, Item, SinkItem, Codec> {
     #[pin]
     inner: Transport,
@@ -334,7 +335,7 @@ pub mod formats {
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
         #[cfg_attr(feature = "docs", doc(cfg(bincode)))]
         #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
+        #[derivative(Default(bound = ""), Debug)]
         pub struct Bincode<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
@@ -375,7 +376,7 @@ pub mod formats {
         /// JSON codec using [serde_json](https://docs.rs/serde_json) crate.
         #[cfg_attr(feature = "docs", doc(cfg(json)))]
         #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
+        #[derivative(Default(bound = ""), Debug)]
         pub struct Json<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
@@ -415,7 +416,7 @@ pub mod formats {
         /// MessagePack codec using [rmp-serde](https://docs.rs/rmp-serde) crate.
         #[cfg_attr(feature = "docs", doc(cfg(messagepack)))]
         #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
+        #[derivative(Default(bound = ""), Debug)]
         pub struct MessagePack<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
@@ -456,7 +457,7 @@ pub mod formats {
         /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
         #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
         #[derive(Derivative)]
-        #[derivative(Default(bound = ""))]
+        #[derivative(Default(bound = ""), Debug)]
         pub struct Cbor<Item, SinkItem> {
             _mkr: PhantomData<(Item, SinkItem)>,
         }
