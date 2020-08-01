@@ -37,6 +37,10 @@ tokio = { version = "0.2", features = ["full"] }
 tokio-util = { version = "0.3", features = ["full"] }
 static_assertions = "1.1.0"
 
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
+
 [features]
 bincode = ["derivative", "serde", "bincode-crate"]
 json = ["derivative", "serde", "serde_json"]
