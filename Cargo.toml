@@ -41,7 +41,7 @@ static_assertions = "1.1.0"
 bincode = ["derivative", "serde", "bincode-crate"]
 json = ["derivative", "serde", "serde_json"]
 messagepack = ["derivative", "serde", "rmp-serde"]
-cbor = ["serde", "serde_cbor"]
+cbor = ["derivative", "serde", "serde_cbor"]
 
 [[example]]
 name = "client"
