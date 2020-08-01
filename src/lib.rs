@@ -44,6 +44,8 @@
 //! [`Stream`]: https://docs.rs/futures/0.3/futures/stream/trait.Stream.html
 //! [`Sink`]: https://docs.rs/futures/0.3/futures/sink/trait.Sink.html
 
+#![cfg_attr(docsrs, feature(doc_cfg))]
+
 use bytes::{Bytes, BytesMut};
 use futures::{prelude::*, ready};
 use pin_project::pin_project;
@@ -313,15 +315,6 @@ pub type SymmetricallyFramed<Transport, Value, Codec> = Framed<Transport, Value,
     feature = "messagepack",
     feature = "cbor"
 ))]
-#[cfg_attr(
-    docs,
-    doc(cfg(any(
-        feature = "json",
-        feature = "bincode",
-        feature = "messagepack",
-        feature = "cbor"
-    )))
-)]
 pub mod formats {
     #[cfg(feature = "bincode")]
     pub use self::bincode::*;
@@ -343,14 +336,14 @@ pub mod formats {
         use super::*;
 
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
-        #[cfg_attr(feature = "docs", doc(cfg(bincode)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
         #[derive(Derivative)]
         #[derivative(Default(bound = ""), Debug)]
         pub struct Bincode<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
-        #[cfg_attr(feature = "docs", doc(cfg(bincode)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
         pub type SymmetricalBincode<T> = Bincode<T, T>;
 
         impl<Item, SinkItem> Deserializer<Item> for Bincode<Item, SinkItem>
@@ -384,14 +377,14 @@ pub mod formats {
         use super::*;
 
         /// JSON codec using [serde_json](https://docs.rs/serde_json) crate.
-        #[cfg_attr(feature = "docs", doc(cfg(json)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
         #[derive(Derivative)]
         #[derivative(Default(bound = ""), Debug)]
         pub struct Json<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
-        #[cfg_attr(feature = "docs", doc(cfg(json)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
         pub type SymmetricalJson<T> = Json<T, T>;
 
         impl<Item, SinkItem> Deserializer<Item> for Json<Item, SinkItem>
@@ -424,14 +417,14 @@ pub mod formats {
         use std::io;
 
         /// MessagePack codec using [rmp-serde](https://docs.rs/rmp-serde) crate.
-        #[cfg_attr(feature = "docs", doc(cfg(messagepack)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "messagepack")))]
         #[derive(Derivative)]
         #[derivative(Default(bound = ""), Debug)]
         pub struct MessagePack<Item, SinkItem> {
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
-        #[cfg_attr(feature = "docs", doc(cfg(messagepack)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "messagepack")))]
         pub type SymmetricalMessagePack<T> = MessagePack<T, T>;
 
         impl<Item, SinkItem> Deserializer<Item> for MessagePack<Item, SinkItem>
@@ -465,14 +458,14 @@ pub mod formats {
         use super::*;
 
         /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
-        #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "cbor")))]
         #[derive(Derivative)]
         #[derivative(Default(bound = ""), Debug)]
         pub struct Cbor<Item, SinkItem> {
             _mkr: PhantomData<(Item, SinkItem)>,
         }
 
-        #[cfg_attr(feature = "docs", doc(cfg(cbor)))]
+        #[cfg_attr(docsrs, doc(cfg(feature = "cbor")))]
         pub type SymmetricalCbor<T> = Cbor<T, T>;
 
         impl<Item, SinkItem> Deserializer<Item> for Cbor<Item, SinkItem>
