@@ -334,17 +334,40 @@ pub mod formats {
     #[cfg(feature = "bincode")]
     mod bincode {
         use super::*;
+        use bincode_crate::Options;
 
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
         #[derive(Derivative)]
-        #[derivative(Default(bound = ""), Debug)]
-        pub struct Bincode<Item, SinkItem> {
+        #[derivative(Debug)]
+        pub struct Bincode<Item, SinkItem, O = bincode_crate::DefaultOptions> {
+            options: O,
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
+        impl<Item, SinkItem> Default for Bincode<Item, SinkItem> {
+            fn default() -> Self {
+                Bincode {
+                    options: Default::default(),
+                    ghost: PhantomData,
+                }
+            }
+        }
+
+        impl<Item, SinkItem, O> From<O> for Bincode<Item, SinkItem, O>
+        where
+            O: Options,
+        {
+            fn from(options: O) -> Self {
+                Self {
+                    options,
+                    ghost: PhantomData,
+                }
+            }
+        }
+
         #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
-        pub type SymmetricalBincode<T> = Bincode<T, T>;
+        pub type SymmetricalBincode<T, O = bincode_crate::DefaultOptions> = Bincode<T, T, O>;
 
         impl<Item, SinkItem> Deserializer<Item> for Bincode<Item, SinkItem>
         where
@@ -353,7 +376,9 @@ pub mod formats {
             type Error = io::Error;
 
             fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
-                Ok(bincode_crate::deserialize(src)
+                Ok(self
+                    .options
+                    .deserialize(src)
                     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?)
             }
         }
@@ -365,7 +390,9 @@ pub mod formats {
             type Error = io::Error;
 
             fn serialize(self: Pin<&mut Self>, item: &SinkItem) -> Result<Bytes, Self::Error> {
-                Ok(bincode_crate::serialize(item)
+                Ok(self
+                    .options
+                    .serialize(item)
                     .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
                     .into())
             }
