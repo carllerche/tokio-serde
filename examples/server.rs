@@ -11,9 +11,7 @@ pub async fn main() {
 
     println!("listening on {:?}", listener.local_addr());
 
-    let mut s = listener.incoming();
-
-    while let Some(socket) = s.try_next().await.unwrap() {
+    while let Some(socket) = listener.try_next().await.unwrap() {
         // Delimit frames using a length header
         let length_delimited = FramedRead::new(socket, LengthDelimitedCodec::new());
 
