@@ -47,7 +47,8 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 use bytes::{Bytes, BytesMut};
-use futures::{prelude::*, ready};
+use futures_core::{ready, Stream, TryStream};
+use futures_sink::Sink;
 use pin_project::pin_project;
 use std::{
     marker::PhantomData,
