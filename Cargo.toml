@@ -22,7 +22,7 @@ libraries.
 """
 
 [dependencies]
-bytes = "0.5"
+bytes = "0.6"
 derivative = { version = "2", optional = true }
 futures = "0.3"
 pin-project = "1.0"
@@ -34,7 +34,7 @@ serde_cbor = { version = "0.11", optional = true }
 
 [dev-dependencies]
 tokio = { version = "0.3", features = ["full"] }
-tokio-util = { version = "0.4", features = ["full"] }
+tokio-util = { version = "0.5", features = ["full"] }
 static_assertions = "1.1.0"
 
 [package.metadata.docs.rs]
