@@ -96,7 +96,7 @@ use std::{
 ///
 ///         let mut ret = BytesMut::with_capacity(self.width);
 ///         ret.put_uint(*item, self.width);
-///         Ok(ret.to_bytes())
+///         Ok(ret.into())
 ///     }
 /// }
 ///
@@ -326,32 +326,25 @@ pub mod formats {
     pub use self::messagepack::*;
 
     use super::{Deserializer, Serializer};
-    use bytes::{buf::BufExt, Bytes, BytesMut};
-    use derivative::Derivative;
+    use bytes::{Buf, Bytes, BytesMut};
+    use educe::Educe;
     use serde::{Deserialize, Serialize};
     use std::{io, marker::PhantomData, pin::Pin};
 
     #[cfg(feature = "bincode")]
     mod bincode {
         use super::*;
-        use bincode_crate::Options;
+        use bincode_crate::config::Options;
 
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
-        #[derive(Derivative)]
-        #[derivative(Debug)]
+        #[derive(Educe)]
+        #[educe(Default(bound = "O: Default"), Debug)]
         pub struct Bincode<Item, SinkItem, O = bincode_crate::DefaultOptions> {
+            #[educe(Debug(ignore))]
             options: O,
+            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
             ghost: PhantomData<(Item, SinkItem)>,
-        }
-
-        impl<Item, SinkItem> Default for Bincode<Item, SinkItem> {
-            fn default() -> Self {
-                Bincode {
-                    options: Default::default(),
-                    ghost: PhantomData,
-                }
-            }
         }
 
         impl<Item, SinkItem, O> From<O> for Bincode<Item, SinkItem, O>
@@ -409,9 +402,10 @@ pub mod formats {
 
         /// JSON codec using [serde_json](https://docs.rs/serde_json) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""), Debug)]
+        #[derive(Educe)]
+        #[educe(Debug, Default)]
         pub struct Json<Item, SinkItem> {
+            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
@@ -449,9 +443,10 @@ pub mod formats {
 
         /// MessagePack codec using [rmp-serde](https://docs.rs/rmp-serde) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "messagepack")))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""), Debug)]
+        #[derive(Educe)]
+        #[educe(Debug, Default)]
         pub struct MessagePack<Item, SinkItem> {
+            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
@@ -490,9 +485,10 @@ pub mod formats {
 
         /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "cbor")))]
-        #[derive(Derivative)]
-        #[derivative(Default(bound = ""), Debug)]
+        #[derive(Educe)]
+        #[educe(Debug, Default)]
         pub struct Cbor<Item, SinkItem> {
+            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
             _mkr: PhantomData<(Item, SinkItem)>,
         }
 
@@ -543,5 +539,60 @@ pub mod formats {
                 }
             }
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[cfg(feature = "bincode")]
+    #[test]
+    fn bincode_impls() {
+        use impls::impls;
+        use std::fmt::Debug;
+
+        struct Nothing;
+        type T = crate::formats::Bincode<Nothing, Nothing>;
+
+        assert!(impls!(T: Debug));
+        assert!(impls!(T: Default));
+    }
+
+    #[cfg(feature = "json")]
+    #[test]
+    fn json_impls() {
+        use impls::impls;
+        use std::fmt::Debug;
+
+        struct Nothing;
+        type T = crate::formats::Json<Nothing, Nothing>;
+
+        assert!(impls!(T: Debug));
+        assert!(impls!(T: Default));
+    }
+
+    #[cfg(feature = "messagepack")]
+    #[test]
+    fn messagepack_impls() {
+        use impls::impls;
+        use std::fmt::Debug;
+
+        struct Nothing;
+        type T = crate::formats::MessagePack<Nothing, Nothing>;
+
+        assert!(impls!(T: Debug));
+        assert!(impls!(T: Default));
+    }
+
+    #[cfg(feature = "cbor")]
+    #[test]
+    fn cbor_impls() {
+        use impls::impls;
+        use std::fmt::Debug;
+
+        struct Nothing;
+        type T = crate::formats::Cbor<Nothing, Nothing>;
+
+        assert!(impls!(T: Debug));
+        assert!(impls!(T: Default));
     }
 }
