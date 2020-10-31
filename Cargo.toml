@@ -22,10 +22,10 @@ libraries.
 """
 
 [dependencies]
-bytes = "0.5"
-derivative = { version = "2", optional = true }
+bytes = "0.6"
+educe = { version = "0.4", optional = true, default-features = false }
 futures = "0.3"
-pin-project = "0.4"
+pin-project = "1"
 serde = { version = "1", optional = true }
 bincode-crate = { package = "bincode", version = "1", optional = true }
 serde_json = { version = "1", optional = true }
@@ -33,8 +33,9 @@ rmp-serde = { version = "0.14", optional = true }
 serde_cbor = { version = "0.11", optional = true }
 
 [dev-dependencies]
-tokio = { version = "0.2", features = ["full"] }
-tokio-util = { version = "0.3", features = ["full"] }
+impls = "1"
+tokio = { version = "0.3", features = ["full"] }
+tokio-util = { version = "0.5", features = ["codec"] }
 static_assertions = "1.1.0"
 
 [package.metadata.docs.rs]
@@ -42,10 +43,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-bincode = ["derivative", "serde", "bincode-crate"]
-json = ["derivative", "serde", "serde_json"]
-messagepack = ["derivative", "serde", "rmp-serde"]
-cbor = ["derivative", "serde", "serde_cbor"]
+bincode = ["educe/Debug", "educe/Default", "serde", "bincode-crate"]
+json = ["educe/Debug", "educe/Default", "serde", "serde_json"]
+messagepack = ["educe/Debug", "educe/Default", "serde", "rmp-serde"]
+cbor = ["educe/Debug", "educe/Default", "serde", "serde_cbor"]
 
 [[example]]
 name = "client"
