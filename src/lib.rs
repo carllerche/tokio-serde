@@ -327,25 +327,35 @@ pub mod formats {
     pub use self::messagepack::*;
 
     use super::{Deserializer, Serializer};
-    use bytes::{Buf, Bytes, BytesMut};
+    use bytes::{Bytes, BytesMut};
     use educe::Educe;
     use serde::{Deserialize, Serialize};
-    use std::{io, marker::PhantomData, pin::Pin};
+    use std::{marker::PhantomData, pin::Pin};
 
     #[cfg(feature = "bincode")]
     mod bincode {
         use super::*;
         use bincode_crate::config::Options;
+        use std::io;
 
         /// Bincode codec using [bincode](https://docs.rs/bincode) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "bincode")))]
         #[derive(Educe)]
-        #[educe(Default(bound = "O: Default"), Debug)]
+        #[educe(Debug)]
         pub struct Bincode<Item, SinkItem, O = bincode_crate::DefaultOptions> {
             #[educe(Debug(ignore))]
             options: O,
-            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
+            #[educe(Debug(ignore))]
             ghost: PhantomData<(Item, SinkItem)>,
+        }
+
+        impl<Item, SinkItem> Default for Bincode<Item, SinkItem> {
+            fn default() -> Self {
+                Bincode {
+                    options: Default::default(),
+                    ghost: PhantomData,
+                }
+            }
         }
 
         impl<Item, SinkItem, O> From<O> for Bincode<Item, SinkItem, O>
@@ -400,6 +410,7 @@ pub mod formats {
     #[cfg(feature = "json")]
     mod json {
         use super::*;
+        use bytes::Buf;
 
         /// JSON codec using [serde_json](https://docs.rs/serde_json) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "json")))]
@@ -439,7 +450,7 @@ pub mod formats {
     #[cfg(feature = "messagepack")]
     mod messagepack {
         use super::*;
-
+        use bytes::Buf;
         use std::io;
 
         /// MessagePack codec using [rmp-serde](https://docs.rs/rmp-serde) crate.
@@ -483,6 +494,7 @@ pub mod formats {
     #[cfg(feature = "cbor")]
     mod cbor {
         use super::*;
+        use std::io;
 
         /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "cbor")))]

@@ -45,7 +45,7 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-bincode = ["educe/Debug", "educe/Default", "serde", "bincode-crate"]
+bincode = ["educe/Debug", "serde", "bincode-crate"]
 json = ["educe/Debug", "educe/Default", "serde", "serde_json"]
 messagepack = ["educe/Debug", "educe/Default", "serde", "rmp-serde"]
 cbor = ["educe/Debug", "educe/Default", "serde", "serde_cbor"]
