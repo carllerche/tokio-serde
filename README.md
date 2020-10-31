@@ -11,7 +11,7 @@ To use `tokio-serde`, first add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-tokio-serde = "0.6"
+tokio-serde = "0.7"
 ```
 
 Next, add this to your crate:
