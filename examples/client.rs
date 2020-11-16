@@ -4,13 +4,14 @@ use tokio::net::TcpStream;
 use tokio_serde::formats::*;
 use tokio_util::codec::{FramedWrite, LengthDelimitedCodec};
 
-fn setup_writer(socket: tokio::net::TcpStream) -> impl Sink<serde_json::Value> {
+type JsonWriter = tokio_serde::Framed<tokio_util::codec::FramedWrite<tokio::net::TcpStream, tokio_util::codec::LengthDelimitedCodec>, serde_json::Value, serde_json::Value, tokio_serde::formats::Json<serde_json::Value, serde_json::Value>>;
+
+fn setup_writer(socket: tokio::net::TcpStream) -> JsonWriter {
     // Delimit frames using a length header
     let length_delimited = FramedWrite::new(socket, LengthDelimitedCodec::new());
 
     // Serialize frames with JSON
-    let serialized =
-        tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
+    let serialized = tokio_serde::SymmetricallyFramed::new(length_delimited, SymmetricalJson::default());
 
     return serialized;
 }
