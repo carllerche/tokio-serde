@@ -7,7 +7,7 @@ authors = [
     "Artem Vorotnikov <artem@vorotnikov.me>",
     "Bastian Köcher <git@kchr.de>",
 ]
-license = "MIT/Apache-2.0"
+license = "MIT OR Apache-2.0"
 readme = "README.md"
 categories = ["asynchronous", "encoding"]
 keywords = ["async", "serde", "serialization"]
