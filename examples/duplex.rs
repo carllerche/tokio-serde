@@ -1,4 +1,4 @@
-use futures::prelude::*;
+use futures::{SinkExt, TryStreamExt};
 use serde::{Deserialize, Serialize};
 use tokio::net::{TcpListener, TcpStream};
 use tokio_serde::formats::*;
