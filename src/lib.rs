@@ -40,7 +40,7 @@
 //!
 //! * [server](https://github.com/carllerche/tokio-serde/blob/master/examples/server.rs)
 //! * [client](https://github.com/carllerche/tokio-serde/blob/master/examples/client.rs)
-//! * [client](https://github.com/carllerche/tokio-serde/blob/master/examples/duplex.rs)
+//! * [duplex](https://github.com/carllerche/tokio-serde/blob/master/examples/duplex.rs)
 //!
 //! [serde]: https://serde.rs
 //! [serde-json]: https://github.com/serde-rs/json
