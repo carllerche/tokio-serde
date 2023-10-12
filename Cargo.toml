@@ -23,7 +23,6 @@ libraries.
 
 [dependencies]
 bytes = "1.0"
-educe = { version = "0.4", optional = true, default-features = false }
 futures-core = "0.3"
 futures-sink = "0.3"
 pin-project = "1"
@@ -45,10 +44,10 @@ all-features = true
 rustdoc-args = ["--cfg", "docsrs"]
 
 [features]
-bincode = ["educe/Debug", "serde", "bincode-crate"]
-json = ["educe/Debug", "educe/Default", "serde", "serde_json"]
-messagepack = ["educe/Debug", "educe/Default", "serde", "rmp-serde"]
-cbor = ["educe/Debug", "educe/Default", "serde", "serde_cbor"]
+bincode = ["serde", "bincode-crate"]
+json = ["serde", "serde_json"]
+messagepack = ["serde", "rmp-serde"]
+cbor = ["serde", "serde_cbor"]
 
 [[example]]
 name = "client"
