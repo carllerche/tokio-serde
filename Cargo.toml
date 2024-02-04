@@ -57,3 +57,7 @@ required-features = ["bincode", "cbor", "json", "messagepack"]
 [[example]]
 name = "server"
 required-features = ["bincode", "cbor", "json", "messagepack"]
+
+[[example]]
+name = "duplex"
+required-features = ["bincode", "cbor", "json", "messagepack", "serde/derive"]
