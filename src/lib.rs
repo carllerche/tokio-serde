@@ -381,11 +381,10 @@ pub mod formats {
             type Error = io::Error;
 
             fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
-                Ok(self
-                    .options
+                self.options
                     .clone()
                     .deserialize(src)
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
             }
         }
 
@@ -397,12 +396,11 @@ pub mod formats {
             type Error = io::Error;
 
             fn serialize(self: Pin<&mut Self>, item: &SinkItem) -> Result<Bytes, Self::Error> {
-                Ok(self
-                    .options
+                self.options
                     .clone()
                     .serialize(item)
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
-                    .into())
+                    .map(From::from)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
             }
         }
     }
@@ -417,7 +415,7 @@ pub mod formats {
         #[derive(Educe)]
         #[educe(Debug, Default)]
         pub struct Json<Item, SinkItem> {
-            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
+            #[educe(Debug(ignore))]
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
@@ -458,7 +456,7 @@ pub mod formats {
         #[derive(Educe)]
         #[educe(Debug, Default)]
         pub struct MessagePack<Item, SinkItem> {
-            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
+            #[educe(Debug(ignore))]
             ghost: PhantomData<(Item, SinkItem)>,
         }
 
@@ -472,8 +470,8 @@ pub mod formats {
             type Error = io::Error;
 
             fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
-                Ok(rmp_serde::from_read(std::io::Cursor::new(src).reader())
-                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?)
+                rmp_serde::from_read(std::io::Cursor::new(src).reader())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
             }
         }
 
@@ -501,7 +499,7 @@ pub mod formats {
         #[derive(Educe)]
         #[educe(Debug, Default)]
         pub struct Cbor<Item, SinkItem> {
-            #[educe(Debug(ignore), Default(expression = "PhantomData"))]
+            #[educe(Debug(ignore))]
             _mkr: PhantomData<(Item, SinkItem)>,
         }
 
