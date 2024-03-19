@@ -4,8 +4,8 @@
 //!
 //! # Introduction
 //!
-//! This crate provides [transport] combinators that transform a stream of
-//! frames encoded as bytes into a stream of frame values. It is expected that
+//! This crate provides transport combinators that transform a stream of
+//! [frames] encoded as bytes into a stream of frame values. It is expected that
 //! the framing happens at another layer. One option is to use a [length
 //! delimited] framing transport.
 //!
@@ -36,8 +36,8 @@
 //!
 //! [serde]: https://serde.rs
 //! [serde-json]: https://github.com/serde-rs/json
-//! [transport]: https://tokio.rs/docs/going-deeper/transports/
-//! [length delimited]: https://docs.rs/tokio-util/0.2/tokio_util/codec/length_delimited/index.html
+//! [frames]: https://tokio.rs/tokio/tutorial/framing
+//! [length delimited]: https://docs.rs/tokio-util/latest/tokio_util/codec/length_delimited/index.html
 //! [`Serializer`]: trait.Serializer.html
 //! [`Deserializer`]: trait.Deserializer.html
 //! [`Framed`]: struct.Framed.html
