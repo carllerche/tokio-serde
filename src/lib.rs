@@ -260,7 +260,6 @@ impl<Transport, Item, SinkItem, Codec> Stream for Framed<Transport, Item, SinkIt
 where
     Transport: TryStream<Ok = BytesMut>,
     Codec::Error: Into<Transport::Error>,
-    Transport::Ok: Into<BytesMut>,
     Codec: Deserializer<Item>,
 {
     type Item = Result<Item, Transport::Error>;
