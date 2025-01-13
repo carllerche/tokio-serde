@@ -259,8 +259,7 @@ impl<Transport, Item, SinkItem, Codec> Framed<Transport, Item, SinkItem, Codec> 
 impl<Transport, Item, SinkItem, Codec> Stream for Framed<Transport, Item, SinkItem, Codec>
 where
     Transport: TryStream<Ok = BytesMut>,
-    Transport::Error: From<Codec::Error>,
-    BytesMut: From<Transport::Ok>,
+    Codec::Error: Into<Transport::Error>,
     Codec: Deserializer<Item>,
 {
     type Item = Result<Item, Transport::Error>;
@@ -271,7 +270,8 @@ where
                 .as_mut()
                 .project()
                 .codec
-                .deserialize(&bytes?)?))),
+                .deserialize(&bytes?)
+                .map_err(Into::into)?))),
             None => Poll::Ready(None),
         }
     }
