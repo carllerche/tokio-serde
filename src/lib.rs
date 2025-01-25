@@ -27,12 +27,20 @@
 //! * `tokio_util::codec::FramedWrite`
 //! * `tokio::net::TcpStream`
 //!
+//! Combining reading and writing a duplex (reading and writing) pipeline 
+//! looks like this:
+//!
+//! * `tokio_serde::Framed`
+//! * `tokio_util::codec::Framed`
+//! * `tokio::net::TcpStream`
+//!
 //! # Examples
 //!
 //! For an example, see how JSON support is implemented:
 //!
 //! * [server](https://github.com/carllerche/tokio-serde/blob/master/examples/server.rs)
 //! * [client](https://github.com/carllerche/tokio-serde/blob/master/examples/client.rs)
+//! * [duplex](https://github.com/carllerche/tokio-serde/blob/master/examples/duplex.rs)
 //!
 //! [serde]: https://serde.rs
 //! [serde-json]: https://github.com/serde-rs/json
