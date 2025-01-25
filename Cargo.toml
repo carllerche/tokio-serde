@@ -31,7 +31,10 @@ serde = { version = "1", optional = true }
 bincode-crate = { package = "bincode", version = "1", optional = true }
 serde_json = { version = "1", optional = true }
 rmp-serde = { version = "1", optional = true }
-serde_cbor = { version = "0.11", optional = true }
+minicbor-serde = { version = "0.3", optional = true, features = [
+  "std",
+  "half",
+] }
 
 [dev-dependencies]
 futures = "0.3"
@@ -48,7 +51,7 @@ rustdoc-args = ["--cfg", "docsrs"]
 bincode = ["educe/Debug", "serde", "bincode-crate"]
 json = ["educe/Debug", "educe/Default", "serde", "serde_json"]
 messagepack = ["educe/Debug", "educe/Default", "serde", "rmp-serde"]
-cbor = ["educe/Debug", "educe/Default", "serde", "serde_cbor"]
+cbor = ["educe/Debug", "educe/Default", "serde", "minicbor-serde"]
 
 [[example]]
 name = "client"
