@@ -494,7 +494,7 @@ pub mod formats {
         use super::*;
         use std::io;
 
-        /// CBOR codec using [serde_cbor](https://docs.rs/serde_cbor) crate.
+        /// CBOR codec using [minicbor-serde](https://docs.rs/minicbor_serde) crate.
         #[cfg_attr(docsrs, doc(cfg(feature = "cbor")))]
         #[derive(Educe)]
         #[educe(Debug, Default)]
@@ -513,7 +513,8 @@ pub mod formats {
             type Error = io::Error;
 
             fn deserialize(self: Pin<&mut Self>, src: &BytesMut) -> Result<Item, Self::Error> {
-                serde_cbor::from_slice(src.as_ref()).map_err(into_io_error)
+                minicbor_serde::from_slice(src.as_ref())
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))
             }
         }
 
@@ -524,30 +525,9 @@ pub mod formats {
             type Error = io::Error;
 
             fn serialize(self: Pin<&mut Self>, item: &SinkItem) -> Result<Bytes, Self::Error> {
-                serde_cbor::to_vec(item)
-                    .map_err(into_io_error)
-                    .map(Into::into)
-            }
-        }
-
-        fn into_io_error(cbor_err: serde_cbor::Error) -> io::Error {
-            use io::ErrorKind;
-            use serde_cbor::error::Category;
-            use std::error::Error;
-
-            match cbor_err.classify() {
-                Category::Eof => io::Error::new(ErrorKind::UnexpectedEof, cbor_err),
-                Category::Syntax => io::Error::new(ErrorKind::InvalidInput, cbor_err),
-                Category::Data => io::Error::new(ErrorKind::InvalidData, cbor_err),
-                Category::Io => {
-                    // Extract the underlying io error's type
-                    let kind = cbor_err
-                        .source()
-                        .and_then(|err| err.downcast_ref::<io::Error>())
-                        .map(|io_err| io_err.kind())
-                        .unwrap_or(ErrorKind::Other);
-                    io::Error::new(kind, cbor_err)
-                }
+                Ok(minicbor_serde::to_vec(item)
+                    .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?
+                    .into())
             }
         }
     }
